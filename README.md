@@ -24,25 +24,25 @@ I dati sono stati ricavati dalla piattaforma ufficiale del Ministero dell'Intern
 
 ## Modello probabilistico
 
-La dinamica del primo turno è modellata con una distribuzione Dirichlet-Multinomiale. Se \(\boldsymbol{p}\) è il vettore
-delle quote di voto per i \(K\) candidati e \(\boldsymbol{\alpha}\) il parametro di concentrazione, estraiamo
+La dinamica del primo turno è modellata con una distribuzione Dirichlet-Multinomiale. Se $\boldsymbol{p}$ è il vettore
+delle quote di voto per i $K$ candidati e $\boldsymbol{\alpha}$ il parametro di concentrazione, estraiamo
 
-\[
+$$
 \boldsymbol{p} \sim \mathrm{Dirichlet}(\boldsymbol{\alpha}), \qquad
 \boldsymbol{v} \mid \boldsymbol{p} \sim \mathrm{Multinomiale}(N, \boldsymbol{p})
-\]
+$$
 
-dove \(N\) è il numero di schede valide. Il parametro di concentrazione \(\kappa\) è controllabile da linea di comando e
-viene scalato sulle percentuali storiche \(\hat{p}_i\) tramite \(\alpha_i = \kappa \hat{p}_i\).
-Nell'implementazione ci limitiamo a campionare \(\boldsymbol{p}\), sufficiente a determinare l'esito del turno in termini di quote percentuali.
+dove $N$ è il numero di schede valide. Il parametro di concentrazione $\kappa$ è controllabile da linea di comando e
+viene scalato sulle percentuali storiche $\hat{p}_i$ tramite $\alpha_i = \kappa \hat{p}_i$.
+Nell'implementazione ci limitiamo a campionare $\boldsymbol{p}$, sufficiente a determinare l'esito del turno in termini di quote percentuali.
 
 Il trattamento dell'astensione al primo turno è affidato ad una perturbazione gaussiana
 
-\[
+$$
 A^{(1)} \sim \max\Bigl(0, \min\bigl(0{,}9, \mathcal{N}(\hat{a}_1, \sigma_a^2)\bigr)\Bigr)
-\]
+$$
 
-dove \(\hat{a}_1\) è l'astensione osservata nel 2019 e \(\sigma_a\) un parametro di volatilità (default 0,02).
+dove $\hat{a}_1$ è l'astensione osservata nel 2019 e $\sigma_a$ un parametro di volatilità (default 0,02).
 
 ### Regole elettorali
 
@@ -52,31 +52,33 @@ dove \(\hat{a}_1\) è l'astensione osservata nel 2019 e \(\sigma_a\) un parametr
 ### Catena di Markov per il ballottaggio
 
 La catena di Markov agisce sul vettore di probabilità
-\(\boldsymbol{q}^{(1)} = (p_1, \dots, p_K, a_1)\) composto dalle quote del primo turno e dall'astensione. La matrice di
-transizione \(\mathbf{T}\) restituisce la distribuzione post riallineamento
+$\boldsymbol{q}^{(1)} = (p_1, \dots, p_K, a_1)$ composto dalle quote del primo turno e dall'astensione. La matrice di
+transizione $\mathbf{T}$ restituisce la distribuzione post riallineamento
 
-\[
+$$
 \boldsymbol{q}^{(2)} = \boldsymbol{q}^{(1)} \mathbf{T}.
-\]
+$$
 
 La calibrazione avviene miscelando la preferenza del gruppo di origine con il risultato storico del ballottaggio
-\(\boldsymbol{r}\). Se indichiamo con \(\boldsymbol{e}_i\) il vettore unitario del gruppo \(i\) e con \(\lambda\) il
-parametro di elasticità, ogni riga di \(\mathbf{T}\) è costruita come
+$\boldsymbol{r}$. Se indichiamo con $\boldsymbol{e}_i$ il vettore unitario del gruppo $i$ e con $\lambda$ il
+parametro di elasticità, ogni riga di $\mathbf{T}$ è costruita come
 
-\[
+$$
 \mathbf{T}_{i,\cdot} = (1-\lambda) \boldsymbol{e}_{f(i)} + \lambda \boldsymbol{r},
-\]
+$$
 
-dove \(f(i)\) è il finalista preferito dal gruppo \(i\) (di norma il proprio candidato, o quello maggiormente vicino
-politicamente). Il parametro \(\lambda\) controlla la convergenza verso il ballottaggio 2019: \(\lambda=0\) significa che
-ogni blocco resta monolitico, \(\lambda=1\) significa allineamento immediato a \(\boldsymbol{r}\).
+dove $f(i)$ è il finalista preferito dal gruppo $i$ (di norma il proprio candidato, o quello maggiormente vicino
+politicamente). Il parametro $\lambda$ controlla la convergenza verso il ballottaggio 2019: $\lambda=0$ significa che
+ogni blocco resta monolitico, $\lambda=1$ significa allineamento immediato a $\boldsymbol{r}$.
 
 Dopo l'applicazione della catena di Markov la distribuzione viene normalizzata sulle colonne dei finalisti per ottenere una stima
-\(\tilde{p}\) delle loro quote al ballottaggio. Per modellare la variabilità di breve periodo adottiamo una distribuzione Beta:
+$\tilde{p}$ delle loro quote al ballottaggio. Per modellare la variabilità di breve periodo adottiamo una distribuzione Beta:
 
-\[\tilde{p}_1 \sim \mathrm{Beta}(\lambda\tilde{p}_1,\, \lambda(1-\tilde{p}_1))\]
+$$
+\tilde{p}_1 \sim \mathrm{Beta}(\lambda\tilde{p}_1,\, \lambda(1-\tilde{p}_1))
+$$
 
-Il parametro \(\lambda\) corrisponde a ``runoff_strength`` e rappresenta la dimensione campionaria efficace della disputa di secondo turno.
+Il parametro $\lambda$ corrisponde a ``runoff_strength`` e rappresenta la dimensione campionaria efficace della disputa di secondo turno.
 
 ## Struttura del codice
 
@@ -130,7 +132,7 @@ Il parametro ``--runoff-strength`` controlla invece quanto rumore viene aggiunto
 
 * Le operazioni numeriche usano solo il modulo standard `random` (campionamento Gamma/Beta) per garantire portabilità senza dipendenze esterne.
 * La catena di Markov viene precalcolata all'inizializzazione del simulatore, evitando ricostruzioni ripetute durante le iterazioni.
-* L'uso combinato di Dirichlet e Beta mantiene una complessità \(\mathcal{O}(K)\) per simulazione e permette di controllare con precisione la volatilità.
+* L'uso combinato di Dirichlet e Beta mantiene una complessità $\mathcal{O}(K)$ per simulazione e permette di controllare con precisione la volatilità.
 
 ## Riproducibilità
 
